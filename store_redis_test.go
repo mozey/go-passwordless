@@ -1,6 +1,7 @@
 package passwordless
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func newRedisMock() *redisMock {
 	}
 }
 
-func (r redisMock) Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+func (r redisMock) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
 	val := rval{
 		d: expiration,
 	}
@@ -37,7 +38,7 @@ func (r redisMock) Set(key string, value interface{}, expiration time.Duration) 
 	return redis.NewStatusResult(key, nil)
 }
 
-func (r redisMock) TTL(key string) *redis.DurationCmd {
+func (r redisMock) TTL(ctx context.Context, key string) *redis.DurationCmd {
 	v, ok := r.store[key]
 	if !ok {
 		return redis.NewDurationResult(-1*time.Second, nil)
@@ -46,7 +47,7 @@ func (r redisMock) TTL(key string) *redis.DurationCmd {
 	return cmd
 }
 
-func (r redisMock) Get(key string) *redis.StringCmd {
+func (r redisMock) Get(ctx context.Context, key string) *redis.StringCmd {
 	v, ok := r.store[key]
 	if !ok {
 		return redis.NewStringResult("", redis.Nil)
@@ -58,7 +59,7 @@ func (r redisMock) Get(key string) *redis.StringCmd {
 	return redis.NewStringResult(v.v, nil)
 }
 
-func (r redisMock) Del(keys ...string) *redis.IntCmd {
+func (r redisMock) Del(ctx context.Context, keys ...string) *redis.IntCmd {
 	for _, k := range keys {
 		delete(r.store, k)
 	}
