@@ -9,7 +9,9 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/gyepisam/mcf v0.0.0-20181020145543-a4d14a7af431
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/pzduniak/mcf v0.0.0-20160731113721-0ddac5a6d704
 	github.com/stretchr/testify v1.7.0
 	github.com/throttled/throttled v2.2.4+incompatible // indirect
