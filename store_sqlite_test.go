@@ -5,57 +5,82 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
+func getConnection() (db *sqlx.DB, err error) {
+	db, err = sqlx.Open("sqlite3", ":memory:")
+	if err != nil {
+		return db, errors.WithStack(err)
+	}
+	_, err = db.Exec(`create table session (
+	uid integer primary key autoincrement,
+	token varchar(255) not null unique,
+	expires datetime not null,
+	created datetime not null default current_timestamp
+);`)
+	if err != nil {
+		return db, errors.WithStack(err)
+	}
+	return db, nil
+}
+
 func TestSQLiteStore(t *testing.T) {
-	var db *sqlx.DB
-	ms := NewSQLiteStore(db)
-	assert.NotNil(t, ms)
-
-	b, exp, err := ms.Exists(nil, "uid")
+	db, err := getConnection()
 	require.NoError(t, err)
-	assert.False(t, b)
-	assert.True(t, exp.IsZero())
-
-	err = ms.Store(nil, "", "uid", -time.Hour)
-	b, exp, err = ms.Exists(nil, "uid")
+	s, err := NewSQLiteStore(db, "", "", "", "")
 	require.NoError(t, err)
-	assert.False(t, b)
-	assert.True(t, exp.IsZero())
+	require.NotNil(t, s)
 
-	err = ms.Store(nil, "", "uid", time.Hour)
-	b, exp, err = ms.Exists(nil, "uid")
+	b, exp, err := s.Exists(nil, "uid")
 	require.NoError(t, err)
-	assert.True(t, b)
-	assert.False(t, exp.IsZero())
+	require.False(t, b)
+	require.True(t, exp.IsZero())
+
+	err = s.Store(nil, "", "uid", -time.Hour)
+	require.NoError(t, err)
+	b, exp, err = s.Exists(nil, "uid")
+	require.NoError(t, err)
+	require.False(t, b)
+	require.True(t, exp.IsZero())
+
+	err = s.Store(nil, "", "uid", time.Hour)
+	require.NoError(t, err)
+	b, exp, err = s.Exists(nil, "uid")
+	require.NoError(t, err)
+	require.True(t, b)
+	require.False(t, exp.IsZero())
 }
 
 func TestSQLiteStoreVerify(t *testing.T) {
-	var db *sqlx.DB
-	ms := NewSQLiteStore(db)
-	assert.NotNil(t, ms)
+	db, err := getConnection()
+	require.NoError(t, err)
+	s, err := NewSQLiteStore(db, "", "", "", "")
+	require.NoError(t, err)
+	require.NotNil(t, s)
 
 	// Token doesn't exist
-	b, err := ms.Verify(nil, "badtoken", "uid")
-	assert.False(t, b)
-	assert.Equal(t, ErrTokenNotFound, err)
+	b, err := s.Verify(nil, "bad_token", "uid")
+	require.False(t, b)
+	require.Equal(t, ErrTokenNotFound.Error(), err.Error())
 
 	// Token expired
-	err = ms.Store(nil, "", "uid", -time.Hour)
-	b, err = ms.Verify(nil, "badtoken", "uid")
-	assert.False(t, b)
-	assert.Equal(t, ErrTokenNotFound, err)
+	err = s.Store(nil, "", "uid", -time.Hour)
+	require.NoError(t, err)
+	b, err = s.Verify(nil, "bad_token", "uid")
+	require.False(t, b)
+	require.Equal(t, ErrTokenNotFound.Error(), err.Error())
 
 	// Token wrong
-	err = ms.Store(nil, "token", "uid", time.Hour)
-	b, err = ms.Verify(nil, "badtoken", "uid")
-	assert.False(t, b)
-	assert.NoError(t, err)
+	err = s.Store(nil, "token", "uid", time.Hour)
+	require.NoError(t, err)
+	b, err = s.Verify(nil, "bad_token", "uid")
+	require.False(t, b)
 
 	// Token correct
-	b, err = ms.Verify(nil, "token", "uid")
-	assert.True(t, b)
-	assert.NoError(t, err)
+	b, err = s.Verify(nil, "token", "uid")
+	require.True(t, b)
+	require.NoError(t, err)
 }
