@@ -93,24 +93,39 @@ expires = excluded.expires`,
 }
 
 // Exists checks to see if a token exists
-func (s SQLiteStore) Exists(ctx context.Context, uid string) (bool, time.Time, error) {
-	return false, time.Now(), errors.Errorf("TODO Exists")
+func (s SQLiteStore) Exists(ctx context.Context, uid string) (
+	exists bool, expires time.Time, err error) {
+
+	session, err := s.getSessionByUID(uid)
+	if err != nil {
+		return false, expires, errors.WithStack(err)
+	}
+
+	// Check token expiry
+	now := time.Now().UTC().Unix()
+	if now > session.Expires.Unix() {
+		return false, expires, errors.WithStack(ErrTokenExpired)
+	}
+
+	return true, session.Expires, nil
 }
 
 // Verify checks to see if a token exists and is valid for a user
-func (s SQLiteStore) Verify(ctx context.Context, token, uid string) (valid bool, err error) {
+func (s SQLiteStore) Verify(ctx context.Context, token, uid string) (
+	valid bool, err error) {
+
 	session, err := s.getSessionByUID(uid)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
 
-	// Expires
+	// Check token expiry
 	now := time.Now().UTC().Unix()
 	if now > session.Expires.Unix() {
 		return false, errors.WithStack(ErrTokenExpired)
 	}
 
-	// Token
+	// Compare token hash
 	err = bcrypt.CompareHashAndPassword(
 		[]byte(session.TokenHash), []byte(token))
 	if err != nil {

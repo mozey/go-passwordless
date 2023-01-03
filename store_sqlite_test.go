@@ -46,14 +46,14 @@ func TestSQLiteStoreExists(t *testing.T) {
 	require.NotNil(t, s)
 
 	b, exp, err := s.Exists(nil, "uid")
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.False(t, b)
 	require.True(t, exp.IsZero())
 
 	err = s.Store(nil, "", "uid", -time.Hour)
 	require.NoError(t, err)
 	b, exp, err = s.Exists(nil, "uid")
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.False(t, b)
 	require.True(t, exp.IsZero())
 
