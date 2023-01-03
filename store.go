@@ -10,8 +10,11 @@ import (
 )
 
 var (
-	ErrTokenNotFound = errors.New("the token does not exist")
-	ErrTokenNotValid = errors.New("the token is incorrect")
+	ErrTokenNotFound        = errors.New("the token does not exist")
+	ErrTokenNotValid        = errors.New("the token is incorrect")
+	ErrTokenExpired         = errors.New("the token is expired")
+	ErrDBConnectionNotValid = errors.New("db connection is not valid")
+	ErrTableNameNotValid    = errors.New("table name is not valid")
 )
 
 // TokenStore is a storage mechanism for tokens.
